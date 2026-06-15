@@ -298,10 +298,13 @@ async function encryptData(plainText, password) {
   // Combine salt(32) + iv(12) + ciphertext
   const out  = new Uint8Array(32 + 12 + ct.byteLength);
   out.set(salt, 0); out.set(iv, 32); out.set(new Uint8Array(ct), 44);
-  // Base64
+  // Base64 — URL-safe (Java-compatible: no +, /, = chars)
   let b64 = "";
   out.forEach(b => b64 += String.fromCharCode(b));
-  return btoa(b64);
+  return btoa(b64)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g,  "");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -415,7 +418,10 @@ async function tryUnlock(){
   btn.innerHTML='<span class="spinner"></span>Decrypting…';
   errEl.style.display='none';
   try{
-    const raw=atob(ENC);
+    // URL-safe Base64 → standard Base64 (Java-compatible format)
+    const std=ENC.replace(/-/g,"+").replace(/_/g,"/")
+                  + "===".slice(0,(4-ENC.length%4)%4);
+    const raw=atob(std);
     const bytes=new Uint8Array(raw.length);
     for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
     const salt=bytes.slice(0,32),iv=bytes.slice(32,44),data=bytes.slice(44);
