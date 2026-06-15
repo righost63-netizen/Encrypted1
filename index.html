@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🔐 HTML Encryptor — AES-256</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    min-height:100vh;
+    background:linear-gradient(135deg,#0a0a1a 0%,#1a0a2e 50%,#0a0a1a 100%);
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:24px;
+    font-family:'Segoe UI',system-ui,sans-serif;
+  }
+
+  /* ── Header ── */
+  .header{text-align:center;margin-bottom:36px}
+  .icon-big{font-size:52px;margin-bottom:10px;display:block}
+  .title{
+    font-size:clamp(26px,5vw,40px);font-weight:900;
+    background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;letter-spacing:-1px;margin-bottom:6px;
+  }
+  .subtitle{color:rgba(255,255,255,0.4);font-size:13px}
+
+  /* ── Card ── */
+  .card{
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border:1px solid rgba(255,255,255,0.1);border-radius:24px;
+    padding:36px 32px;width:100%;max-width:480px;
+    box-shadow:0 40px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* ── Badges ── */
+  .badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;
+  }
+  .badge-v{background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:#a78bfa}
+  .badge-b{background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);color:#60a5fa}
+  .badge-g{background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399}
+
+  /* ── Drop Zone ── */
+  .drop-zone{
+    border:2px dashed rgba(255,255,255,0.15);border-radius:16px;
+    padding:48px 24px;text-align:center;cursor:pointer;
+    transition:all .25s;background:rgba(255,255,255,0.02);
+  }
+  .drop-zone:hover,.drop-zone.over{
+    border-color:#a78bfa;background:rgba(167,139,250,0.08);
+  }
+  .drop-zone .dz-icon{font-size:44px;margin-bottom:12px;display:block}
+  .drop-zone p{color:rgba(255,255,255,0.7);font-size:15px;font-weight:600;margin-bottom:6px}
+  .drop-zone small{color:rgba(255,255,255,0.35);font-size:13px}
+
+  /* ── File Chip ── */
+  .file-chip{
+    display:flex;align-items:center;gap:12px;
+    background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);
+    border-radius:12px;padding:12px 16px;margin-bottom:24px;
+  }
+  .file-chip span{font-size:28px}
+  .file-chip .fn{color:#fff;font-size:14px;font-weight:700}
+  .file-chip .fs{color:rgba(255,255,255,0.4);font-size:12px}
+
+  /* ── Form ── */
+  label.lbl{
+    color:rgba(255,255,255,0.55);font-size:12px;font-weight:700;
+    letter-spacing:.5px;display:block;margin-bottom:8px;text-transform:uppercase;
+  }
+  .input-wrap{position:relative;margin-bottom:20px}
+  input[type=password],input[type=text]{
+    width:100%;padding:13px 48px 13px 16px;border-radius:12px;
+    border:1.5px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.06);color:#fff;font-size:15px;outline:none;
+    transition:border .2s;
+  }
+  input:focus{border-color:#7c3aed}
+  .eye{
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;
+    color:rgba(255,255,255,0.35);font-size:16px;padding:0;
+  }
+
+  /* ── Strength bar ── */
+  .bar-bg{height:4px;background:rgba(255,255,255,0.08);border-radius:4px;margin-bottom:6px}
+  .bar-fill{height:4px;border-radius:4px;transition:all .3s;width:0}
+  .str-lbl{font-size:12px;font-weight:700;margin-bottom:16px}
+
+  /* ── Match indicator ── */
+  .match{font-size:12px;margin-top:-14px;margin-bottom:16px}
+  .ok{color:#34d399}.no{color:#ff8a8a}
+
+  /* ── Info box ── */
+  .info-box{
+    background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.2);
+    border-radius:12px;padding:14px 16px;margin-bottom:24px;
+    color:rgba(255,255,255,0.45);font-size:12px;line-height:1.8;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary{
+    width:100%;padding:15px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,#7c3aed,#4f46e5);
+    color:#fff;font-size:16px;font-weight:700;cursor:pointer;
+    letter-spacing:.3px;transition:opacity .2s,transform .1s;
+    box-shadow:0 8px 24px rgba(124,58,237,0.4);
+  }
+  .btn-primary:hover{opacity:.9}
+  .btn-primary:active{transform:scale(.98)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-sec{
+    width:100%;padding:13px;border-radius:14px;
+    border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);
+    font-size:14px;cursor:pointer;margin-top:12px;transition:background .2s;
+  }
+  .btn-sec:hover{background:rgba(255,255,255,0.09)}
+
+  /* ── Error ── */
+  .error-box{
+    background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);
+    border-radius:10px;padding:10px 14px;color:#ff8a8a;
+    font-size:13px;margin-bottom:16px;display:none;
+  }
+
+  /* ── Done screen ── */
+  .done-icon{font-size:64px;text-align:center;margin-bottom:16px}
+  .done-title{color:#34d399;font-size:22px;font-weight:800;text-align:center;margin-bottom:8px}
+  .done-sub{color:rgba(255,255,255,0.45);font-size:14px;text-align:center;margin-bottom:28px}
+  .spec-grid{
+    background:rgba(255,255,255,0.04);border-radius:14px;
+    padding:20px;margin-bottom:28px;display:grid;gap:10px;
+  }
+  .spec-row{display:flex;justify-content:space-between;align-items:center}
+  .spec-k{color:rgba(255,255,255,0.4);font-size:13px}
+  .spec-v{color:#a78bfa;font-size:13px;font-weight:700}
+
+  /* ── Progress ── */
+  .progress-wrap{margin-bottom:20px;display:none}
+  .progress-bar{
+    height:6px;border-radius:6px;background:rgba(255,255,255,0.08);overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;width:0;border-radius:6px;
+    background:linear-gradient(90deg,#7c3aed,#60a5fa);
+    transition:width .4s;
+  }
+  .progress-lbl{color:rgba(255,255,255,0.45);font-size:12px;margin-top:8px;text-align:center}
+
+  .footer{color:rgba(255,255,255,0.18);font-size:11px;margin-top:20px;text-align:center}
+
+  /* Steps hidden by default */
+  #step-upload,#step-config,#step-done{display:none}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="icon-big">🔐</span>
+  <h1 class="title">HTML Encryptor</h1>
+  <p class="subtitle">AES-256-GCM &nbsp;·&nbsp; PBKDF2 &nbsp;·&nbsp; 310,000 Iterations</p>
+</div>
+
+<!-- ── Card ── -->
+<div class="card">
+
+  <!-- Badges -->
+  <div class="badges">
+    <span class="badge badge-v">🛡️ AES-256-GCM</span>
+    <span class="badge badge-b">🔑 PBKDF2-SHA256</span>
+    <span class="badge badge-g">🚫 No Server</span>
+  </div>
+
+  <!-- STEP 1: UPLOAD -->
+  <div id="step-upload">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <span class="dz-icon">📄</span>
+      <p>HTML ফাইল এখানে ড্রপ করুন</p>
+      <small>অথবা ক্লিক করে সিলেক্ট করুন &nbsp;·&nbsp; Max 5MB</small>
+    </div>
+    <input type="file" id="fileInput" accept=".html,.htm" style="display:none"/>
+    <div class="error-box" id="uploadErr"></div>
+  </div>
+
+  <!-- STEP 2: CONFIG -->
+  <div id="step-config">
+    <div class="file-chip" id="fileChip">
+      <span>📄</span>
+      <div>
+        <div class="fn" id="chipName"></div>
+        <div class="fs" id="chipSize"></div>
+      </div>
+    </div>
+
+    <div class="error-box" id="configErr"></div>
+
+    <!-- Password -->
+    <label class="lbl">পাসওয়ার্ড সেট করুন</label>
+    <div class="input-wrap">
+      <input type="password" id="pw" placeholder="মিনিমাম ৬ অক্ষর" autocomplete="new-password"/>
+      <button class="eye" onclick="toggleEye('pw','eyePw')"><span id="eyePw">👁️</span></button>
+    </div>
+    <!-- Strength -->
+    <div id="strengthWrap" style="display:none;margin-top:-12px;margin-bottom:20px">
+      <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+      <div class="str-lbl" id="strLbl"></div>
+    </div>
+
+    <!-- Confirm -->
+    <label class="lbl">পাসওয়ার্ড নিশ্চিত করুন</label>
+    <div class="input-wrap">
+      <input type="password" id="pw2" placeholder="পাসওয়ার্ড আবার লিখুন" autocomplete="new-password"/>
+    </div>
+    <div class="match" id="matchMsg"></div>
+
+    <!-- Hint -->
+    <label class="lbl">পাসওয়ার্ড হিন্ট <span style="color:rgba(255,255,255,0.3);font-weight:400;text-transform:none">(ঐচ্ছিক)</span></label>
+    <div class="input-wrap">
+      <input type="text" id="hint" placeholder="যেমন: আমার পোষা প্রাণীর নাম" maxlength="80"/>
+    </div>
+
+    <!-- Info -->
+    <div class="info-box">
+      🔒 এনক্রিপশন সম্পূর্ণ আপনার ব্রাউজারে হয়। কোনো ডেটা সার্ভারে যায় না।<br/>
+      🔓 ৫ বার ভুল পাসওয়ার্ড দিলে ফাইলটি লক হয়ে যাবে।<br/>
+      🧂 প্রতিটা ফাইলে আলাদা random salt ও IV ব্যবহার হয়।
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-lbl" id="progressLbl">Encrypting…</div>
+    </div>
+
+    <button class="btn-primary" id="encBtn" onclick="doEncrypt()">🔐 Encrypt & Download</button>
+    <button class="btn-sec" onclick="reset()">← আবার শুরু করুন</button>
+  </div>
+
+  <!-- STEP 3: DONE -->
+  <div id="step-done">
+    <div class="done-icon">🎉</div>
+    <div class="done-title">সফলভাবে Encrypt হয়েছে!</div>
+    <div class="done-sub">ফাইলটি ডাউনলোড হয়ে গেছে।</div>
+    <div class="spec-grid">
+      <div class="spec-row"><span class="spec-k">🛡️ Algorithm</span><span class="spec-v">AES-256-GCM</span></div>
+      <div class="spec-row"><span class="spec-k">🔑 Key Derivation</span><span class="spec-v">PBKDF2-SHA256</span></div>
+      <div class="spec-row"><span class="spec-k">🔄 Iterations</span><span class="spec-v">310,000</span></div>
+      <div class="spec-row"><span class="spec-k">🧂 Salt Size</span><span class="spec-v">256-bit random</span></div>
+      <div class="spec-row"><span class="spec-k">📐 IV Size</span><span class="spec-v">96-bit random</span></div>
+      <div class="spec-row"><span class="spec-k">🚫 Max Attempts</span><span class="spec-v">5 tries</span></div>
+    </div>
+    <button class="btn-primary" onclick="reset()">🔐 নতুন ফাইল Encrypt করুন</button>
+  </div>
+
+</div>
+
+<p class="footer">100% Client-side &nbsp;·&nbsp; Zero Server &nbsp;·&nbsp; Web Crypto API</p>
+
+<!-- ══════════════════════════════════════════ SCRIPT ══════════════════════════════════════════ -->
+<script>
+// ── State ──
+let htmlContent = "";
+let fileName    = "";
+let fileSize    = 0;
+
+// ── Init ──
+show("step-upload");
+
+// ─────────────────────────────────────────────────────────────────
+//  CRYPTO  (Web Crypto API – built into every modern browser)
+// ─────────────────────────────────────────────────────────────────
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const km  = await crypto.subtle.importKey(
+    "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name:"PBKDF2", salt, iterations:310000, hash:"SHA-256" },
+    km,
+    { name:"AES-GCM", length:256 },
+    false,
+    ["encrypt","decrypt"]
+  );
+}
+
+async function encryptData(plainText, password) {
+  const enc  = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(32));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const key  = await deriveKey(password, salt);
+  const ct   = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, enc.encode(plainText));
+  // Combine salt(32) + iv(12) + ciphertext
+  const out  = new Uint8Array(32 + 12 + ct.byteLength);
+  out.set(salt, 0); out.set(iv, 32); out.set(new Uint8Array(ct), 44);
+  // Base64
+  let b64 = "";
+  out.forEach(b => b64 += String.fromCharCode(b));
+  return btoa(b64);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BUILD THE LOCKED OUTPUT PAGE
+// ─────────────────────────────────────────────────────────────────
+function buildLockedPage(encB64, hint, origName) {
+  const hintHtml = hint
+    ? `<p class="show-hint" onclick="this.style.display='none';document.getElementById('hintBox').style.display='block'">💡 Show hint</p>
+       <div id="hintBox" class="hint-box">💡 ${hint.replace(/</g,"&lt;")}</div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🔒 Protected — ${origName.replace(/</g,"&lt;")}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+     background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+     font-family:'Segoe UI',system-ui,sans-serif;padding:20px}
+.card{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,.12);border-radius:24px;
+      padding:44px 36px;width:100%;max-width:400px;
+      box-shadow:0 32px 64px rgba(0,0,0,.55)}
+.lock{font-size:52px;text-align:center;margin-bottom:20px;
+      animation:pulse 2.4s ease-in-out infinite;display:block}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+h2{color:#fff;text-align:center;font-size:20px;font-weight:800;margin-bottom:6px}
+.fname{color:rgba(255,255,255,.4);text-align:center;font-size:12px;margin-bottom:28px;
+       word-break:break-all}
+label{color:rgba(255,255,255,.6);font-size:12px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px}
+.inp-wrap{position:relative;margin-bottom:18px}
+input[type=password],input[type=text]{
+  width:100%;padding:13px 44px 13px 14px;border-radius:12px;
+  border:1.5px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.07);color:#fff;font-size:15px;outline:none;
+  transition:border .2s}
+input:focus{border-color:#7c5cbf}
+input:disabled{opacity:.4;cursor:not-allowed}
+.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+     background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:16px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;
+     background:linear-gradient(135deg,#7c3aed,#4f46e5);
+     color:#fff;font-size:16px;font-weight:700;letter-spacing:.3px;
+     transition:opacity .2s,transform .1s;
+     box-shadow:0 8px 20px rgba(124,58,237,.4)}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spinner{display:inline-block;width:15px;height:15px;
+         border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+         border-radius:50%;animation:spin .7s linear infinite;
+         vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);
+     border-radius:10px;padding:10px 14px;color:#ff8a8a;
+     font-size:13px;text-align:center;margin-top:14px;display:none}
+.attempts{color:rgba(255,255,255,.3);font-size:11px;text-align:center;
+          margin-top:12px;min-height:16px}
+.locked{color:#ff6b6b;text-align:center;font-size:13px;
+        margin-top:12px;display:none;font-weight:600}
+.hint-box{background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.25);
+          border-radius:10px;padding:10px 14px;color:#ffc107;font-size:12px;
+          margin-bottom:18px;text-align:center;display:none}
+.show-hint{color:rgba(255,255,255,.3);font-size:11px;text-align:center;
+           cursor:pointer;margin-bottom:14px;text-decoration:underline}
+.protected-badge{display:inline-flex;align-items:center;gap:6px;
+                 background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);
+                 border-radius:8px;padding:4px 10px;color:#34d399;font-size:11px;
+                 font-weight:700;margin:0 auto 20px;display:flex;justify-content:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="lock">🔐</span>
+  <h2>Protected File</h2>
+  <p class="fname">${origName.replace(/</g,"&lt;")}</p>
+  <div class="protected-badge">🛡️ AES-256-GCM Encrypted</div>
+  ${hintHtml}
+  <label for="pw">Password</label>
+  <div class="inp-wrap">
+    <input type="password" id="pw" placeholder="Enter password…" autocomplete="off"/>
+    <button class="eye" onclick="toggleEye()">👁️</button>
+  </div>
+  <button class="btn" id="unlockBtn" onclick="tryUnlock()">🔓 Unlock</button>
+  <div class="err" id="errEl"></div>
+  <div class="locked" id="lockedEl">🔒 Too many attempts. Reload to try again.</div>
+  <div class="attempts" id="attEl"></div>
+</div>
+<script>
+const ENC="${encB64}";
+let tries=0,MAX=5,locked=false;
+
+function toggleEye(){
+  if(locked)return;
+  const i=document.getElementById('pw');
+  i.type=i.type==='password'?'text':'password';
+}
+
+async function tryUnlock(){
+  if(locked)return;
+  const pw=document.getElementById('pw').value;
+  const errEl=document.getElementById('errEl');
+  if(!pw){
+    errEl.textContent='⚠️ পাসওয়ার্ড লিখুন।';errEl.style.display='block';return;
+  }
+  const btn=document.getElementById('unlockBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Decrypting…';
+  errEl.style.display='none';
+  try{
+    const raw=atob(ENC);
+    const bytes=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+    const salt=bytes.slice(0,32),iv=bytes.slice(32,44),data=bytes.slice(44);
+    const enc2=new TextEncoder();
+    const km=await crypto.subtle.importKey('raw',enc2.encode(pw),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey(
+      {name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},
+      km,{name:'AES-GCM',length:256},false,['decrypt']
+    );
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data);
+    const html=new TextDecoder().decode(plain);
+    document.open();document.write(html);document.close();
+  }catch(e){
+    tries++;
+    const left=MAX-tries;
+    if(tries>=MAX){
+      locked=true;
+      document.getElementById('lockedEl').style.display='block';
+      document.getElementById('attEl').textContent='';
+      document.getElementById('pw').disabled=true;
+      btn.textContent='🔒 Locked';
+    }else{
+      errEl.textContent='❌ ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।';
+      errEl.style.display='block';
+      document.getElementById('attEl').textContent=
+        left+' attempt'+(left===1?'':'s')+' remaining';
+      document.getElementById('pw').value='';
+      btn.disabled=false;
+      btn.textContent='🔓 Unlock';
+    }
+  }
+}
+document.getElementById('pw').addEventListener('keydown',e=>{
+  if(e.key==='Enter')tryUnlock();
+});
+<\/script>
+</body>
+</html>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  UI HELPERS
+// ─────────────────────────────────────────────────────────────────
+function show(id){
+  ["step-upload","step-config","step-done"].forEach(s=>{
+    document.getElementById(s).style.display = s===id ? "block" : "none";
+  });
+}
+
+function showErr(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function hideErr(id){ document.getElementById(id).style.display = "none"; }
+
+function getStrength(pw){
+  if(!pw)return{score:0,label:"",color:""};
+  let s=0;
+  if(pw.length>=8)s++;
+  if(pw.length>=12)s++;
+  if(/[A-Z]/.test(pw))s++;
+  if(/[0-9]/.test(pw))s++;
+  if(/[^A-Za-z0-9]/.test(pw))s++;
+  if(s<=1)return{score:20, label:"Weak",       color:"#ff4444"};
+  if(s===2)return{score:40, label:"Fair",       color:"#ff9800"};
+  if(s===3)return{score:60, label:"Good",       color:"#ffc107"};
+  if(s===4)return{score:80, label:"Strong",     color:"#4caf50"};
+  return           {score:100,label:"Very Strong",color:"#00e676"};
+}
+
+function toggleEye(inputId, btnId){
+  const i = document.getElementById(inputId);
+  i.type  = i.type==="password" ? "text" : "password";
+}
+
+function setProgress(pct, lbl){
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressLbl").textContent  = lbl;
+}
+
+function reset(){
+  htmlContent=""; fileName=""; fileSize=0;
+  document.getElementById("pw").value="";
+  document.getElementById("pw2").value="";
+  document.getElementById("hint").value="";
+  document.getElementById("fileInput").value="";
+  hideErr("uploadErr"); hideErr("configErr");
+  document.getElementById("strengthWrap").style.display="none";
+  document.getElementById("matchMsg").textContent="";
+  document.getElementById("progressWrap").style.display="none";
+  document.getElementById("encBtn").disabled=false;
+  document.getElementById("encBtn").textContent="🔐 Encrypt & Download";
+  show("step-upload");
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  FILE LOAD
+// ─────────────────────────────────────────────────────────────────
+function loadFile(f){
+  if(!f)return;
+  if(!f.name.match(/\.html?$/i)){
+    showErr("uploadErr","⚠️ শুধুমাত্র .html / .htm ফাইল সাপোর্টেড।"); return;
+  }
+  if(f.size > 5*1024*1024){
+    showErr("uploadErr","⚠️ ফাইল সাইজ ৫MB এর বেশি হওয়া যাবে না।"); return;
+  }
+  hideErr("uploadErr");
+  fileName = f.name;
+  fileSize = f.size;
+  const r = new FileReader();
+  r.onload = e => {
+    htmlContent = e.target.result;
+    document.getElementById("chipName").textContent = fileName;
+    document.getElementById("chipSize").textContent = (fileSize/1024).toFixed(1)+" KB";
+    show("step-config");
+  };
+  r.readAsText(f,"UTF-8");
+}
+
+// File input change
+document.getElementById("fileInput").addEventListener("change", e => loadFile(e.target.files[0]));
+
+// Drag & Drop
+const dz = document.getElementById("dropZone");
+dz.addEventListener("dragover",  e=>{ e.preventDefault(); dz.classList.add("over"); });
+dz.addEventListener("dragleave", ()=> dz.classList.remove("over"));
+dz.addEventListener("drop", e=>{
+  e.preventDefault(); dz.classList.remove("over");
+  loadFile(e.dataTransfer.files[0]);
+});
+
+// Password strength live
+document.getElementById("pw").addEventListener("input", function(){
+  const sw = document.getElementById("strengthWrap");
+  const str = getStrength(this.value);
+  if(this.value){
+    sw.style.display="block";
+    document.getElementById("barFill").style.width  = str.score+"%";
+    document.getElementById("barFill").style.background = str.color;
+    document.getElementById("strLbl").textContent   = str.label;
+    document.getElementById("strLbl").style.color   = str.color;
+  } else { sw.style.display="none"; }
+  checkMatch();
+});
+
+document.getElementById("pw2").addEventListener("input", checkMatch);
+
+function checkMatch(){
+  const pw = document.getElementById("pw").value;
+  const p2 = document.getElementById("pw2").value;
+  const el = document.getElementById("matchMsg");
+  if(!p2){ el.textContent=""; return; }
+  if(pw===p2 && pw.length>=6){
+    el.textContent="✅ পাসওয়ার্ড মিলেছে";
+    el.className="match ok";
+  } else {
+    el.textContent= pw!==p2 ? "❌ পাসওয়ার্ড মিলছে না" : "⚠️ কমপক্ষে ৬ অক্ষর দিন";
+    el.className="match no";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ENCRYPT + DOWNLOAD
+// ─────────────────────────────────────────────────────────────────
+async function doEncrypt(){
+  hideErr("configErr");
+  const pw   = document.getElementById("pw").value;
+  const pw2  = document.getElementById("pw2").value;
+  const hint = document.getElementById("hint").value.trim();
+
+  if(pw.length < 6){ showErr("configErr","⚠️ পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।"); return; }
+  if(pw !== pw2)   { showErr("configErr","⚠️ পাসওয়ার্ড দুটো মিলছে না!"); return; }
+
+  const btn = document.getElementById("encBtn");
+  btn.disabled=true;
+  btn.innerHTML='<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>Encrypting…';
+
+  const pw2El = document.getElementById("progressWrap");
+  pw2El.style.display="block";
+  setProgress(20,"Deriving key…");
+
+  try{
+    await new Promise(r=>setTimeout(r,100)); // let UI update
+    setProgress(50,"Encrypting data…");
+    const b64 = await encryptData(htmlContent, pw);
+    setProgress(80,"Building locked page…");
+    await new Promise(r=>setTimeout(r,80));
+    const locked = buildLockedPage(b64, hint, fileName);
+    setProgress(100,"Done!");
+
+    const blob = new Blob([locked],{type:"text/html"});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = fileName.replace(/\.html?$/i,"")+"_encrypted.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    await new Promise(r=>setTimeout(r,300));
+    show("step-done");
+  }catch(err){
+    showErr("configErr","❌ Encryption ব্যর্থ হয়েছে: "+err.message);
+    btn.disabled=false;
+    btn.textContent="🔐 Encrypt & Download";
+    pw2El.style.display="none";
+  }
+}
+</script>
+</body>
+</html>
